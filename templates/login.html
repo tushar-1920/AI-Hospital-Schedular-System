@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>🔐 Login</h2>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="loginUser()">Login</button>
+
+    <div class="result" id="loginResult"></div>
+</div>
+
+<script>
+async function loginUser(){
+    const res = await fetch("/auth/login", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value
+        })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("loginResult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+
+    if(data.role === "Admin"){
+        window.location.href = "/ui/admin-dashboard";
+    }
+    else if(data.role === "Doctor"){
+        window.location.href = "/ui/doctor-dashboard";
+    }
+    else if(data.role === "Patient"){
+        window.location.href = "/ui/patient-dashboard";
+    }
+}
+</script>
+
+{% endblock %}

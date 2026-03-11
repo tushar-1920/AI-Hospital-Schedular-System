@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📝 Register</h2>
+
+    <input id="name" placeholder="Full Name">
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <label><b>Select Role:</b></label>
+    <select id="role" onchange="toggleFields()">
+        <option value="Admin">Admin</option>
+        <option value="Doctor">Doctor</option>
+        <option value="Patient">Patient</option>
+    </select>
+
+    <!-- ✅ Doctor Fields -->
+    <div id="doctorFields" style="display:none; margin-top:15px;">
+        <h4>👨‍⚕️ Doctor Details</h4>
+
+        <label><b>Department:</b></label>
+        <select id="department">
+            <option value="General">General</option>
+            <option value="Cardiology">Cardiology</option>
+            <option value="Neurology">Neurology</option>
+            <option value="Orthopedics">Orthopedics</option>
+            <option value="Dermatology">Dermatology</option>
+        </select>
+
+        <input id="specialization" placeholder="Specialization (Heart / Skin / Bones)">
+        <input id="avg" type="number" placeholder="Avg Consult Time (10)">
+        <input id="exp" type="number" placeholder="Experience Years (1)">
+    </div>
+
+    <!-- ✅ Patient Fields -->
+    <div id="patientFields" style="display:none; margin-top:15px;">
+        <h4>🧑 Patient Details</h4>
+
+        <input id="age" type="number" placeholder="Age">
+        
+        <label><b>Gender:</b></label>
+        <select id="gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <input id="phone" placeholder="Phone Number">
+    </div>
+
+    <button onclick="registerUser()" style="margin-top:15px;">Register</button>
+
+    <div class="result" id="regResult"></div>
+</div>
+
+<script>
+function toggleFields(){
+    const role = document.getElementById("role").value;
+
+    document.getElementById("doctorFields").style.display = (role === "Doctor") ? "block" : "none";
+    document.getElementById("patientFields").style.display = (role === "Patient") ? "block" : "none";
+}
+
+async function registerUser(){
+    const role = document.getElementById("role").value;
+
+    let payload = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        role: role
+    };
+
+    // ✅ Add doctor fields if role is Doctor
+    if(role === "Doctor"){
+        payload.department = document.getElementById("department").value;
+        payload.specialization = document.getElementById("specialization").value || "General";
+        payload.avg_consult_time = parseInt(document.getElementById("avg").value || 10);
+        payload.experience_years = parseInt(document.getElementById("exp").value || 1);
+    }
+
+    // ✅ Add patient fields if role is Patient
+    if(role === "Patient"){
+        payload.age = parseInt(document.getElementById("age").value || 20);
+        payload.gender = document.getElementById("gender").value;
+        payload.phone = document.getElementById("phone").value || "";
+    }
+
+    const res = await fetch("/auth/register", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    document.getElementById("regResult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+}
+
+// ✅ Run on load
+toggleFields();
+</script>
+
+{% endblock %}

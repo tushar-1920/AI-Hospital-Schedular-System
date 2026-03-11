@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📩 My Messages & Prescriptions</h2>
+    <p>Messages sent by your doctors after consultation ✅</p>
+</div>
+
+<div class="card">
+    <div class="result" id="msgBox">Loading...</div>
+</div>
+
+<script>
+async function loadMessages(){
+
+    const me = await fetch("/auth/me");
+    const meData = await me.json();
+
+    if(meData.error){
+        document.getElementById("msgBox").innerHTML = "Not logged in ❌";
+        return;
+    }
+
+    const patient_id = meData.patient_id;
+
+    const res = await fetch(`/hospital/patient-messages/${patient_id}`);
+    const data = await res.json();
+
+    if(!data || data.length === 0){
+        document.getElementById("msgBox").innerHTML = "No doctor messages yet ✅";
+        return;
+    }
+
+    let html = "";
+
+    data.forEach(m => {
+        html += `
+            <div style="border:1px solid #ddd; padding:18px; margin-bottom:14px; border-radius:12px; background:#eff6ff;">
+                
+                <b>Doctor:</b> ${m.doctor_name} (${m.department}) <br>
+                <b>Appointment:</b> ${m.slot} <br>
+                <b>Status:</b> <span style="color:#2563eb;"><b>${m.status}</b></span><br>
+                <b>Sent At:</b> ${m.sent_at || "NA"} <br><br>
+
+                <b>Doctor Message:</b>
+                <div style="background:#f8fafc; padding:10px; border-radius:8px; margin-top:6px;">
+                    ${m.doctor_message || "-"}
+                </div>
+                <br>
+
+                <b>Prescription:</b>
+                <div style="background:#f8fafc; padding:10px; border-radius:8px; margin-top:6px;">
+                    ${m.prescription || "-"}
+                </div>
+
+                <br>
+
+                ${
+                    m.status === "Done"
+                    ? `<a href="/ui/feedback/${m.appointment_id}"
+                         style="display:inline-block; background:#16a34a; padding:10px 14px;
+                                color:white; border-radius:8px; text-decoration:none; font-weight:bold;">
+                         ⭐ Give Feedback
+                       </a>`
+                    : `<span style="color:#6b7280;">✅ Feedback available after appointment is Done</span>`
+                }
+            </div>
+        `;
+    });
+
+    document.getElementById("msgBox").innerHTML = html;
+}
+
+loadMessages();
+</script>
+
+{% endblock %}

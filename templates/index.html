@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h1>🏥 Hospital Smart Appointment & AI Scheduler</h1>
+    <p>Doctor availability • AI booking • Emergency handling • ML wait prediction • Dashboard analytics</p>
+</div>
+
+<div class="card">
+    <h3>🚀 Quick Navigation</h3>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+
+        <a class="card" href="/ui/doctors" style="text-decoration:none; color:black;">
+            <h3>👨‍⚕️ Doctors</h3>
+            <p>Add doctors & manage status</p>
+        </a>
+        <a class="card" href="/ui/chatbot" style="text-decoration:none; color:black;">
+    <h3>🤖 Chatbot</h3>
+    <p>Book & manage appointments via chat</p>
+</a>
+
+        <a class="card" href="/ui/patients" style="text-decoration:none; color:black;">
+            <h3>🧑 Patients</h3>
+            <p>Add & manage patients</p>
+        </a>
+
+        <a class="card" href="/ui/slots" style="text-decoration:none; color:black;">
+            <h3>🕒 Slot Generator</h3>
+            <p>Create 9AM-1PM slots</p>
+        </a>
+
+        <a class="card" href="/ui/book" style="text-decoration:none; color:black;">
+            <h3>🤖 AI Booking</h3>
+            <p>Auto doctor + auto slot + wait prediction</p>
+        </a>
+
+        <a class="card" href="/ui/emergency" style="text-decoration:none; color:black;">
+            <h3>🚑 Emergency</h3>
+            <p>Priority booking + shifting</p>
+        </a>
+
+        <a class="card" href="/ui/appointments" style="text-decoration:none; color:black;">
+            <h3>📅 Appointments</h3>
+            <p>View, cancel, reschedule</p>
+        </a>
+
+        <a class="card" href="/ui/dashboard" style="text-decoration:none; color:black;">
+            <h3>📊 Dashboard</h3>
+            <p>Charts, workload, peak hours</p>
+        </a>
+        <a class="card" href="/ui/doctor-slots" style="text-decoration:none; color:black;">
+    <h3>🕒 Doctor Slots</h3>
+    <p>View free/booked slots per doctor</p>
+</a>
+
+<a class="card" href="/ui/patient-history" style="text-decoration:none; color:black;">
+    <h3>🧑 Patient History</h3>
+    <p>View patient appointment records</p>
+</a>
+
+
+    </div>
+</div>
+
+{% endblock %}

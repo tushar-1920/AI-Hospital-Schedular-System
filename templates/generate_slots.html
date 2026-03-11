@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h3>🕒 Generate Slots</h3>
+    <input id="doctor_id" type="number" placeholder="Doctor ID">
+    <input id="slot_date" type="date">
+    <input id="start_time" placeholder="Start Time (09:00)">
+    <input id="end_time" placeholder="End Time (13:00)">
+    <input id="duration" type="number" placeholder="Slot Duration (15)">
+
+    <button onclick="generateSlots()">Generate Slots</button>
+    <div class="result" id="slotresult"></div>
+</div>
+
+<script>
+async function generateSlots(){
+    const res = await fetch("/hospital/generate-slots", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            doctor_id: parseInt(document.getElementById("doctor_id").value),
+            slot_date: document.getElementById("slot_date").value,
+            start_time: document.getElementById("start_time").value || "09:00",
+            end_time: document.getElementById("end_time").value || "13:00",
+            slot_duration: parseInt(document.getElementById("duration").value || 15)
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("slotresult").innerHTML = JSON.stringify(data, null, 2);
+}
+</script>
+
+{% endblock %}

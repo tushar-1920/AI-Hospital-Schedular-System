@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ✅ Top Controls -->
+<!-- ✅ Top Controls -->
+<div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
+    
+    <button style="background:#2563eb; padding:10px 14px; border-radius:8px; color:white; border:none; cursor:pointer;"
+            onclick="previewNextPatient()">
+        ➡️ Next Patient
+    </button>
+
+    <button style="background:#16a34a; padding:10px 14px; border-radius:8px; color:white; border:none; cursor:pointer; display:none;"
+            id="confirmBtn"
+            onclick="confirmNowServing()">
+        ✅ Confirm Now Serving
+    </button>
+
+    <div class="result" id="nowServingBox" style="flex:1;">
+        Loading now serving...
+    </div>
+</div>
+
+
+<div class="card">
+    <h2>👨‍⚕️ Doctor Dashboard</h2>
+    <p>Queue • Slots • View Patient Notes • Mark Done • Send Prescription</p>
+</div>
+
+<div class="card">
+    <h3>✅ My Info</h3>
+    <div class="result" id="doctorInfo">Loading...</div>
+</div>
+
+<div class="card">
+    <h3>🟢 Set My Availability (Generate Slots)</h3>
+
+    <input id="slot_date" type="date">
+    <input id="start_time" placeholder="Start Time (09:00)">
+    <input id="end_time" placeholder="End Time (13:00)">
+    <input id="duration" type="number" placeholder="Slot Duration (15)">
+
+    <button onclick="generateMySlots()">Generate My Slots</button>
+
+    <div class="result" id="genResult"></div>
+</div>
+
+<div class="card">
+    <h3>🕒 My Slots</h3>
+    <div class="result" id="slotInfo">Loading...</div>
+</div>
+
+<div class="card">
+    <h3>📅 My Appointments</h3>
+    <div class="result" id="apptInfo">Loading...</div>
+</div>
+
+<script>
+let DOCTOR_ID = null;
+let NOW_SERVING_TOKEN = 0;
+
+async function loadDoctorDashboard(){
+
+    // ✅ Fetch session info (doctor_id)
+    const me = await fetch("/auth/me");
+    const meData = await me.json();
+
+    if(meData.error || !meData.doctor_id){
+        document.getElementById("doctorInfo").innerHTML = "❌ Not logged in as Doctor";
+        return;
+    }
+
+    DOCTOR_ID = meData.doctor_id;
+
+    // ✅ Load doctor dashboard info
+    const res = await fetch(`/hospital/doctor-dashboard/${DOCTOR_ID}`);
+    const data = await res.json();
+
+    document.getElementById("doctorInfo").innerHTML = `
+        <b>Doctor ID:</b> ${data.doctor_id}<br>
+        <b>Name:</b> ${data.name}<br>
+        <b>Department:</b> ${data.department}<br>
+        <b>Status:</b> ${data.status}<br>
+        <b>Queue Count:</b> ${data.queue_count}
+    `;
+
+    // ✅ Keep showing token from last "Next Patient" click
+    document.getElementById("nowServingBox").innerHTML = `
+        ✅ Current Now Serving Token: <b style="color:green;">${NOW_SERVING_TOKEN}</b>
+    `;
+
+    // ✅ Slots Table
+    if(!data.slots || data.slots.length === 0){
+        document.getElementById("slotInfo").innerHTML = "No slots found ❌";
+    } else {
+        let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+        html += "<tr><th>Slot ID</th><th>Date</th><th>Time</th><th>Status</th></tr>";
+
+        data.slots.forEach(s => {
+            html += `<tr>
+                <td><b>${s.slot_id}</b></td>
+                <td>${s.slot_date}</td>
+                <td>${s.start_time} - ${s.end_time}</td>
+                <td><b>${s.status}</b></td>
+            </tr>`;
+        });
+
+        html += "</table>";
+        document.getElementById("slotInfo").innerHTML = html;
+    }
+
+    // ✅ Load Doctor Appointments
+    const apptRes = await fetch(`/hospital/doctor-appointments/${DOCTOR_ID}`);
+    const apptData = await apptRes.json();
+
+    if(!apptData || apptData.length === 0){
+        document.getElementById("apptInfo").innerHTML = "No appointments found ✅";
+    } else {
+
+        let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+        html += `
+            <tr>
+                <th>Appointment ID</th>
+                <th>Token</th>
+                <th>Patient ID</th>
+                <th>Patient Name</th>
+                <th>Patient Note</th>
+                <th>Slot</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        `;
+
+        apptData.forEach(a => {
+            html += `
+                <tr>
+                    <td><b>${a.appointment_id}</b></td>
+                    <td><b>${a.token_number ?? "-"}</b></td>
+                    <td>${a.patient_id ?? "-"}</td>
+                    <td>${a.patient_name ?? "-"}</td>
+                    <td>${a.patient_message ? a.patient_message : "-"}</td>
+                    <td>${a.slot}</td>
+                    <td><b>${a.status}</b></td>
+                    <td>
+                        ${
+                            a.status === "Booked"
+                            ? `
+                                <button style="background:#16a34a; padding:8px 12px; border:none; color:white; border-radius:6px; cursor:pointer;"
+                                        onclick="markDone(${a.appointment_id})">
+                                    ✅ Mark Done
+                                </button>
+
+                                <a href="/ui/prescription/${a.appointment_id}"
+                                   style="margin-left:10px; background:#2563eb; padding:8px 12px;
+                                          color:white; border-radius:6px; text-decoration:none; display:inline-block;">
+                                    💊 Prescription
+                                </a>
+                              `
+                            : "-"
+                        }
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += "</table>";
+        document.getElementById("apptInfo").innerHTML = html;
+    }
+}
+
+async function markDone(id){
+    const res = await fetch(`/hospital/mark-done/${id}`, {method:"PUT"});
+    const data = await res.json();
+    alert(JSON.stringify(data, null, 2));
+    loadDoctorDashboard();
+}
+
+async function nextPatient(){
+    // ✅ API uses session doctor_id backend
+    const res = await fetch("/hospital/doctor-next-patient", {method:"PUT"});
+    const data = await res.json();
+
+    // ✅ Update now serving token from API response
+    if(data.token_number){
+        NOW_SERVING_TOKEN = data.token_number;
+        document.getElementById("nowServingBox").innerHTML = `
+            ✅ Now Serving Token: <b style="color:green;">${NOW_SERVING_TOKEN}</b>
+        `;
+    } else {
+        document.getElementById("nowServingBox").innerHTML = `
+            ✅ No patients waiting
+        `;
+    }
+
+    loadDoctorDashboard();
+}
+
+async function generateMySlots(){
+    const res = await fetch("/hospital/doctor-generate-slots", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            slot_date: document.getElementById("slot_date").value,
+            start_time: document.getElementById("start_time").value || "09:00",
+            end_time: document.getElementById("end_time").value || "13:00",
+            slot_duration: parseInt(document.getElementById("duration").value || 15)
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("genResult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+
+    loadDoctorDashboard();
+}
+
+// ✅ Load dashboard on page open
+loadDoctorDashboard();
+let PREVIEW_TOKEN = null;
+
+async function previewNextPatient(){
+    const res = await fetch("/hospital/doctor-preview-next");
+    const data = await res.json();
+
+    if(data.error){
+        alert(data.error);
+        return;
+    }
+
+    PREVIEW_TOKEN = data.next_token;
+
+    document.getElementById("nowServingBox").innerHTML = `
+        ✅ Next Token Ready: <b style="color:blue;">${PREVIEW_TOKEN}</b><br>
+        Click <b>Confirm Now Serving</b> to update live queue ✅
+    `;
+
+    // ✅ Show confirm button
+    document.getElementById("confirmBtn").style.display = "inline-block";
+}
+
+async function confirmNowServing(){
+    const res = await fetch("/hospital/doctor-confirm-now-serving", {method:"PUT"});
+    const data = await res.json();
+
+    if(data.error){
+        alert(data.error);
+        return;
+    }
+
+    document.getElementById("nowServingBox").innerHTML = `
+        ✅ Now Serving Confirmed: <b style="color:green;">${data.now_serving_token}</b>
+    `;
+
+    // ✅ Hide confirm button again
+    document.getElementById("confirmBtn").style.display = "none";
+
+    // ✅ Reload dashboard
+    loadDoctorDashboard();
+}
+
+</script>
+
+{% endblock %}

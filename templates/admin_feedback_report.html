@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📊 Doctor Feedback & Visits Report</h2>
+    <p>Top doctors by patient visits + feedback + ratings ✅</p>
+</div>
+
+<div class="card">
+    <button style="background:#2563eb;" onclick="loadReport()">🔄 Load Report</button>
+    <div class="result" id="reportBox">Click load report ✅</div>
+</div>
+
+<script>
+async function loadReport(){
+
+    const res = await fetch("/hospital/admin/doctor-report");
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("reportBox").innerHTML = data.error;
+        return;
+    }
+
+    if(data.length === 0){
+        document.getElementById("reportBox").innerHTML = "No report yet ✅";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += "<tr><th>Doctor ID</th><th>Name</th><th>Dept</th><th>Total Visits</th><th>Feedback Count</th><th>Avg Rating</th></tr>";
+
+    data.forEach(r => {
+        html += `
+            <tr>
+                <td>${r.doctor_id}</td>
+                <td><b>${r.doctor_name}</b></td>
+                <td>${r.department}</td>
+                <td>${r.total_visits}</td>
+                <td>${r.feedback_count}</td>
+                <td>⭐ ${r.avg_rating}</td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+
+    document.getElementById("reportBox").innerHTML = html;
+}
+
+</script>
+
+{% endblock %}

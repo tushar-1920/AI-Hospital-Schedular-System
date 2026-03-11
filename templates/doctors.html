@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>👨‍⚕️ Doctors Management</h2>
+    <p>Add doctor + update doctor availability</p>
+</div>
+
+<!-- ✅ Add Doctor -->
+<div class="card">
+    <h3>➕ Add Doctor</h3>
+    <input id="name" placeholder="Doctor Name">
+    <input id="department" placeholder="Department (Cardiology)">
+    <input id="specialization" placeholder="Specialization">
+    <input id="avg" placeholder="Avg Consult Time (mins)" type="number">
+    <input id="exp" placeholder="Experience Years" type="number">
+    <button onclick="addDoctor()">Add Doctor</button>
+
+    <div class="result" id="addResult"></div>
+</div>
+
+<!-- ✅ Doctor List + Status Toggle -->
+<div class="card">
+    <h3>📌 Doctor List + Status</h3>
+    <button onclick="loadDoctors()">🔄 Refresh Doctors</button>
+    <div class="result" id="doctorList">Loading...</div>
+</div>
+
+<script>
+async function addDoctor(){
+    const res = await fetch("/hospital/add-doctor", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            name: document.getElementById("name").value,
+            department: document.getElementById("department").value,
+            specialization: document.getElementById("specialization").value,
+            avg_consult_time: parseInt(document.getElementById("avg").value || 10),
+            experience_years: parseInt(document.getElementById("exp").value || 1)
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("addResult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+    loadDoctors();
+}
+
+async function loadDoctors(){
+    const res = await fetch("/hospital/doctors");
+    const data = await res.json();
+
+    if(data.length === 0){
+        document.getElementById("doctorList").innerHTML = "No doctors found ❌";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += "<tr><th>ID</th><th>Name</th><th>Dept</th><th>Status</th><th>Update Status</th></tr>";
+
+    data.forEach(d => {
+        html += `
+            <tr>
+                <td>${d.doctor_id}</td>
+                <td>${d.name}</td>
+                <td>${d.department}</td>
+                <td><b>${d.status}</b></td>
+                <td>
+                    <select id="status_${d.doctor_id}">
+                        <option value="Available">Available</option>
+                        <option value="Busy">Busy</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Leave">Leave</option>
+                    </select>
+                    <button style="margin-top:8px;" onclick="updateStatus(${d.doctor_id})">Update</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("doctorList").innerHTML = html;
+}
+
+async function updateStatus(doctor_id){
+    const status = document.getElementById(`status_${doctor_id}`).value;
+
+    const res = await fetch(`/hospital/update-status/${doctor_id}`, {
+        method:"PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ status })
+    });
+
+    const data = await res.json();
+    alert(JSON.stringify(data));
+    loadDoctors();
+}
+
+loadDoctors();
+</script>
+
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h3>➕ Add Patient</h3>
+    <input id="pname" placeholder="Patient Name">
+    <input id="age" type="number" placeholder="Age">
+    <select id="gender">
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+    </select>
+    <input id="phone" placeholder="Phone Number">
+    <button onclick="addPatient()">Add Patient</button>
+
+    <div class="result" id="presult"></div>
+</div>
+
+<script>
+async function addPatient(){
+    const res = await fetch("/hospital/add-patient", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            name: document.getElementById("pname").value,
+            age: parseInt(document.getElementById("age").value),
+            gender: document.getElementById("gender").value,
+            phone: document.getElementById("phone").value
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("presult").innerHTML = JSON.stringify(data, null, 2);
+}
+</script>
+
+{% endblock %}

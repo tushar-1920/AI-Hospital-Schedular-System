@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>🕒 Doctor Wise Slots Viewer</h2>
+    <p>See all Free / Booked / Blocked slots of any doctor</p>
+</div>
+
+<div class="card">
+    <h3>🔍 Search Slots</h3>
+    <input id="docid" type="number" placeholder="Enter Doctor ID">
+    <button onclick="loadSlots()">View Slots</button>
+
+    <div class="result" id="slotBox"></div>
+</div>
+
+<script>
+async function loadSlots(){
+    const doctor_id = parseInt(document.getElementById("docid").value);
+
+    const res = await fetch(`/hospital/slots/${doctor_id}`);
+    const data = await res.json();
+
+    if(data.length === 0){
+        document.getElementById("slotBox").innerHTML = "No slots found ❌";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += "<tr><th>Slot ID</th><th>Date</th><th>Time</th><th>Status</th></tr>";
+
+    data.forEach(s => {
+        html += `
+            <tr>
+                <td>${s.slot_id}</td>
+                <td>${s.slot_date}</td>
+                <td>${s.start_time} - ${s.end_time}</td>
+                <td><b>${s.status}</b></td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("slotBox").innerHTML = html;
+}
+</script>
+
+{% endblock %}

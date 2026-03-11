@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>🧑 Patient Dashboard</h2>
+    <p>My Appointments • Cancel • Reschedule • Live Token Tracking</p>
+</div>
+
+<!-- ✅ LIVE QUEUE STATUS BOX -->
+<div class="card">
+  <h3>📍 Live Queue Status</h3>
+  <div class="result" id="liveStatusBox">
+      Select an appointment and click <b>Track Live</b> ✅
+  </div>
+</div>
+
+<div class="card">
+    <h3>✅ My Info</h3>
+    <div class="result" id="patientInfo">Loading...</div>
+</div>
+
+<div class="card">
+    <h3>📅 My Appointments</h3>
+
+    <label><b>Filter:</b></label>
+    <select id="statusFilter" onchange="loadPatientDashboard()">
+        <option value="All">All</option>
+        <option value="Booked">Booked</option>
+        <option value="Done">Done</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="No-show">No-show</option>
+    </select>
+
+    <div class="result" id="apptInfo">Loading...</div>
+</div>
+
+<script>
+let LIVE_APPOINTMENT_ID = null;
+
+// ✅ LIVE STATUS LOADER
+async function loadLiveStatus(){
+    if(!LIVE_APPOINTMENT_ID){
+        return;
+    }
+
+    const res = await fetch(`/hospital/live-status/${LIVE_APPOINTMENT_ID}`);
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("liveStatusBox").innerHTML = "❌ " + data.error;
+        return;
+    }
+
+    document.getElementById("liveStatusBox").innerHTML = `
+        ✅ <b>Your Token:</b> ${data.your_token}<br>
+        ✅ <b>Now Serving Token:</b> <span style="color:green;"><b>${data.now_serving_token}</b></span><br>
+        ✅ <b>Waiting Patients:</b> ${data.waiting_patients}<br>
+        ✅ <b>Status:</b> <b>${data.status}</b>
+    `;
+}
+
+// ✅ AUTO REFRESH every 3 seconds
+setInterval(loadLiveStatus, 3000);
+
+
+// ✅ PATIENT DASHBOARD MAIN LOADER
+async function loadPatientDashboard(){
+    const me = await fetch("/auth/me");
+    const meData = await me.json();
+
+    if(meData.error){
+        document.getElementById("patientInfo").innerHTML = "Not logged in ❌";
+        document.getElementById("apptInfo").innerHTML = "Please login first.";
+        return;
+    }
+
+    const patient_id = meData.patient_id;
+
+    const res = await fetch(`/hospital/patient-dashboard/${patient_id}`);
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("patientInfo").innerHTML = data.error;
+        document.getElementById("apptInfo").innerHTML = "No data found ❌";
+        return;
+    }
+
+    document.getElementById("patientInfo").innerHTML = `
+        <b>Name:</b> ${data.name} <br>
+        <b>Patient ID:</b> ${data.patient_id}
+    `;
+
+    if(!data.appointments || data.appointments.length === 0){
+        document.getElementById("apptInfo").innerHTML = "No appointments found ❌";
+        return;
+    }
+
+    // ✅ Filter appointments
+    const filter = document.getElementById("statusFilter").value;
+
+    let appointments = data.appointments;
+    if(filter !== "All"){
+        appointments = appointments.filter(a => a.status === filter);
+    }
+
+    if(appointments.length === 0){
+        document.getElementById("apptInfo").innerHTML =
+            `No appointments for status: <b>${filter}</b> ❌`;
+        return;
+    }
+
+    // ✅ TABLE
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += `
+        <tr>
+            <th>Appt ID</th>
+            <th>Token</th>
+            <th>Doctor</th>
+            <th>Dept</th>
+            <th>Slot</th>
+            <th>Status</th>
+            <th>Wait</th>
+            <th>No-show</th>
+            <th>Actions</th>
+        </tr>
+    `;
+
+    appointments.forEach(a => {
+        html += `
+            <tr>
+                <td><b>${a.appointment_id}</b></td>
+                <td><b>${a.token_number ?? "-"}</b></td>
+                <td>${a.doctor_name}</td>
+                <td>${a.department}</td>
+                <td>${a.slot}</td>
+                <td><b>${a.status}</b></td>
+                <td>${a.predicted_wait_time ?? "NA"} min</td>
+                <td><b>${a.no_show_chance ?? 0}%</b></td>
+                <td>
+                    <button style="background:#2563eb; margin-bottom:6px;"
+                        onclick="startTracking(${a.appointment_id})">
+                        📍 Track Live
+                    </button>
+                    <br>
+
+                    ${
+                        a.status === "Booked"
+                        ? `
+                            <button style="background:#dc2626; margin-bottom:6px;"
+                                onclick="cancelMyAppt(${a.appointment_id})">
+                                ❌ Cancel
+                            </button>
+                            <br>
+                            <button style="background:#16a34a;"
+                                onclick="rescheduleMyAppt(${a.appointment_id})">
+                                🔁 Reschedule
+                            </button>
+                          `
+                        : "-"
+                    }
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("apptInfo").innerHTML = html;
+}
+
+
+// ✅ TRACK LIVE button handler
+function startTracking(appointment_id){
+    LIVE_APPOINTMENT_ID = appointment_id;
+    document.getElementById("liveStatusBox").innerHTML =
+        `✅ Tracking Appointment ID: <b>${appointment_id}</b>...`;
+    loadLiveStatus();
+}
+
+
+async function cancelMyAppt(appointment_id){
+    const res = await fetch(`/hospital/patient-cancel/${appointment_id}`, { method: "PUT" });
+    const data = await res.json();
+    alert(JSON.stringify(data, null, 2));
+    loadPatientDashboard();
+}
+
+async function rescheduleMyAppt(appointment_id){
+    const res = await fetch(`/hospital/patient-reschedule/${appointment_id}`, { method: "PUT" });
+    const data = await res.json();
+    alert(JSON.stringify(data, null, 2));
+    loadPatientDashboard();
+}
+
+// ✅ Auto load
+loadPatientDashboard();
+</script>
+
+{% endblock %}

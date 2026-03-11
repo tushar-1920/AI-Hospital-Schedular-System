@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📅 Book Appointment</h2>
+    <p>Select department → select doctor → choose slot → confirm booking ✅</p>
+</div>
+
+<div class="card">
+    <h3>🧑 Patient Info</h3>
+    <div class="result" id="userInfo">Loading session...</div>
+</div>
+
+<div class="card">
+    <h3>📝 Appointment Details</h3>
+
+    <label><b>Department:</b></label>
+    <select id="deptSelect"></select>
+
+    <label><b>Doctor:</b></label>
+    <select id="doctorSelect" onchange="loadFreeSlots()">
+        <option value="">Select Doctor</option>
+    </select>
+
+    <label><b>Priority:</b></label>
+    <select id="priority">
+        <option value="Normal">Normal</option>
+        <option value="Urgent">Urgent</option>
+        <option value="Emergency">Emergency</option>
+    </select>
+
+    <label><b>Visit Type:</b></label>
+    <select id="type">
+        <option value="First Visit">First Visit</option>
+        <option value="Follow-up Visit">Follow-up Visit</option>
+    </select>
+
+    <label><b>Symptoms / Message:</b></label>
+    <textarea id="patient_message" rows="3" placeholder="Example: Fever from 2 days..."></textarea>
+
+</div>
+
+<div class="card">
+    <h3>🕒 Free Slots</h3>
+    <div class="result" id="slotBox">Select doctor to view free slots...</div>
+</div>
+
+<div class="card">
+    <h3>✅ Booking Result</h3>
+    <div class="result" id="bookresult">No booking yet</div>
+</div>
+
+<script>
+let PATIENT_ID = null;
+let SELECTED_SLOT_ID = null;
+
+// ✅ auto department from chatbot (query param)
+const urlParams = new URLSearchParams(window.location.search);
+const CHAT_DEPT = urlParams.get("dept");  // example: /ui/book?dept=Dermatology
+
+async function loadPatient(){
+    const res = await fetch("/auth/me");
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("userInfo").innerHTML = "❌ Login as Patient first.";
+        return;
+    }
+
+    PATIENT_ID = data.patient_id;
+
+    document.getElementById("userInfo").innerHTML = `
+        ✅ Logged in as <b>${data.name}</b> (Patient)<br>
+        ✅ Patient ID: <b>${PATIENT_ID}</b>
+    `;
+}
+
+async function loadDepartments(){
+    const res = await fetch("/hospital/departments");
+    const depts = await res.json();
+
+    const sel = document.getElementById("deptSelect");
+    sel.innerHTML = "";
+
+    depts.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        sel.appendChild(opt);
+    });
+
+    // ✅ If came from chatbot, auto select dept
+    if(CHAT_DEPT){
+        sel.value = CHAT_DEPT;
+    }
+
+    loadDoctors();
+}
+
+async function loadDoctors(){
+    const dept = document.getElementById("deptSelect").value;
+
+    const res = await fetch("/hospital/available-doctors");
+    const doctors = await res.json();
+
+    const doctorSelect = document.getElementById("doctorSelect");
+    doctorSelect.innerHTML = "<option value=''>Select Doctor</option>";
+
+    const filtered = doctors.filter(d => d.department === dept);
+
+    filtered.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.doctor_id;
+        opt.textContent = `${d.name} (ID: ${d.doctor_id})`;
+        doctorSelect.appendChild(opt);
+    });
+
+    document.getElementById("slotBox").innerHTML = "Select doctor to view free slots...";
+}
+
+async function loadFreeSlots(){
+    const doctor_id = document.getElementById("doctorSelect").value;
+
+    if(!doctor_id){
+        document.getElementById("slotBox").innerHTML = "Select doctor first...";
+        return;
+    }
+
+    const res = await fetch(`/hospital/free-slots/${doctor_id}`);
+    const slots = await res.json();
+
+    if(slots.length === 0){
+        document.getElementById("slotBox").innerHTML = "No free slots available ❌";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += "<tr><th>Select</th><th>Slot ID</th><th>Date</th><th>Time</th></tr>";
+
+    slots.forEach(s => {
+        html += `
+            <tr>
+                <td><input type="radio" name="slotRadio" onclick="SELECTED_SLOT_ID=${s.slot_id}"></td>
+                <td>${s.slot_id}</td>
+                <td>${s.slot_date}</td>
+                <td>${s.start_time} - ${s.end_time}</td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    html += `<br><button style="background:#16a34a;" onclick="bookSelectedSlot()">✅ Book Selected Slot</button>`;
+
+    document.getElementById("slotBox").innerHTML = html;
+}
+
+async function bookSelectedSlot(){
+    const doctor_id = document.getElementById("doctorSelect").value;
+    const dept = document.getElementById("deptSelect").value;
+
+    if(!PATIENT_ID){
+        alert("Login as patient first ❌");
+        return;
+    }
+
+    if(!doctor_id || !SELECTED_SLOT_ID){
+        alert("Please select doctor and slot first ❌");
+        return;
+    }
+
+    const payload = {
+        patient_id: PATIENT_ID,
+        department: dept,
+        priority: document.getElementById("priority").value,
+        appointment_type: document.getElementById("type").value,
+        patient_message: document.getElementById("patient_message").value
+    };
+
+    const res = await fetch("/hospital/ai-book-appointment", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if(data.token_number){
+        document.getElementById("bookresult").innerHTML = `
+            ✅ Booking Confirmed!<br>
+            <b>Token:</b> ${data.token_number}<br>
+            <b>Doctor:</b> ${data.assigned_doctor}<br>
+            <b>Slot:</b> ${data.slot}<br>
+            <b>Wait:</b> ${data.predicted_wait_time_min} min
+        `;
+    } else {
+        document.getElementById("bookresult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+    }
+
+    loadFreeSlots();
+}
+
+document.getElementById("deptSelect").addEventListener("change", loadDoctors);
+
+loadPatient();
+loadDepartments();
+</script>
+
+{% endblock %}

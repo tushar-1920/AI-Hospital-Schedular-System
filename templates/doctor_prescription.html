@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>💊 Send Prescription & Advice</h2>
+    <p>Appointment ID: <b>{{ appointment_id }}</b></p>
+</div>
+
+<div class="card">
+    <h3>📝 Prescription</h3>
+    <textarea id="prescription" rows="6" style="width:100%;" placeholder="Example: Paracetamol 500mg - 2 times a day for 3 days"></textarea>
+</div>
+
+<div class="card">
+    <h3>📩 Doctor Message</h3>
+    <textarea id="doctor_message" rows="4" style="width:100%;" placeholder="Example: Take rest, drink water, avoid oily food..."></textarea>
+</div>
+
+<button style="background:#2563eb;" onclick="sendPrescription()">✅ Send to Patient</button>
+
+<div class="result" id="resultBox"></div>
+
+<script>
+async function sendPrescription(){
+    const res = await fetch(`/hospital/add-prescription/{{ appointment_id }}`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            prescription: document.getElementById("prescription").value,
+            doctor_message: document.getElementById("doctor_message").value
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("resultBox").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+
+    // ✅ after send, return to dashboard
+    setTimeout(() => {
+        window.location.href = "/ui/doctor-dashboard";
+    }, 1000);
+}
+</script>
+
+{% endblock %}

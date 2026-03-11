@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📅 Appointment List</h2>
+    <p>View • Cancel • Reschedule appointments</p>
+</div>
+
+<div class="card">
+    <button onclick="loadAppointments()">🔄 Refresh Appointments</button>
+    <div class="result" id="apptBox">Loading...</div>
+</div>
+
+<script>
+async function loadAppointments(){
+    const res = await fetch("/hospital/appointments");
+    const data = await res.json();
+
+    if(data.length === 0){
+        document.getElementById("apptBox").innerHTML = "No appointments found ❌";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += `
+        <tr>
+            <th>ID</th>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Dept</th>
+            <th>Slot</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Pred Wait</th>
+            <th>Actions</th>
+        </tr>
+    `;
+
+    data.forEach(a => {
+        html += `
+            <tr>
+                <td>${a.appointment_id}</td>
+                <td>${a.patient_name}</td>
+                <td>${a.doctor_name}</td>
+                <td>${a.department}</td>
+                <td>${a.slot_date} ${a.slot_time}</td>
+                <td>${a.priority}</td>
+                <td><b>${a.status}</b></td>
+                <td>${a.predicted_wait_time ?? "NA"} min</td>
+                <td>
+                    <button style="margin-bottom:5px; background:#dc2626;" onclick="cancelAppt(${a.appointment_id})">Cancel</button>
+                    <button style="background:#16a34a;" onclick="rescheduleAppt(${a.appointment_id})">Reschedule</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("apptBox").innerHTML = html;
+}
+
+async function cancelAppt(id){
+    const res = await fetch(`/hospital/cancel-appointment/${id}`, { method:"PUT" });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+    loadAppointments();
+}
+
+async function rescheduleAppt(id){
+    const res = await fetch(`/hospital/reschedule-appointment/${id}`, { method:"PUT" });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+    loadAppointments();
+}
+
+loadAppointments();
+</script>
+
+{% endblock %}

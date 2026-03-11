@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h3>🚑 Emergency Booking</h3>
+
+    <input id="epatient" type="number" placeholder="Patient ID">
+    <input id="edept" placeholder="Department">
+
+    <button onclick="emergencyBook()">Emergency Book</button>
+
+    <div class="result" id="eresult"></div>
+</div>
+
+<script>
+async function emergencyBook(){
+    const res = await fetch("/hospital/emergency-book", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            patient_id: parseInt(document.getElementById("epatient").value),
+            department: document.getElementById("edept").value
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("eresult").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+}
+</script>
+
+{% endblock %}

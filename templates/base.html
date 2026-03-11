@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hospital AI Scheduler</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <nav class="navbar">
+    <h2>🏥 Hospital AI Scheduler</h2>
+    {% if session.get("name") %}
+    <span style="color:white; font-size:14px;">
+        Logged in as: <b>{{ session.get("name") }}</b> ({{ session.get("role") }})
+    </span>
+{% endif %}
+
+
+    <div>
+        <a href="/">Home</a>
+
+        {% if session.get("role") == "Admin" %}
+            <a href="/ui/admin-dashboard">Admin Panel</a>
+            <a href="/ui/admin-report">Reports</a>
+
+            <a href="/ui/dashboard">Analytics</a>
+            <a href="/ui/doctors">Doctors</a>
+            <a href="/ui/patients">Patients</a>
+            <a href="/ui/slots">Generate Slots</a>
+            <a href="/ui/appointments">Appointments</a>
+            
+            <a href="/auth/logout" style="color:#f87171;">Logout</a>
+
+        {% elif session.get("role") == "Doctor" %}
+            <a href="/ui/doctor-dashboard">My Dashboard</a>
+            
+            <a href="/ui/appointments">Appointments</a>
+            <a href="/auth/logout" style="color:#f87171;">Logout</a>
+
+        {% elif session.get("role") == "Patient" %}
+            <a href="/ui/patient-dashboard">My Dashboard</a>
+            <a href="/ui/book">AI Booking</a>
+            <a href="/ui/messages">Messages</a>
+
+            
+            <a href="/ui/chatbot">Chatbot</a>
+            <a href="/auth/logout" style="color:#f87171;">Logout</a>
+
+        {% else %}
+            <a href="/ui/login">Login</a>
+            <a href="/ui/register">Register</a>
+        {% endif %}
+    </div>
+</nav>
+
+
+
+    
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+</body>
+</html>

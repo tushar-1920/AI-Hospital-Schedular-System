@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>👑 Admin Dashboard</h2>
+    <p>Manage system + view analytics</p>
+</div>
+
+<div class="card">
+    <h3>🚀 Admin Quick Controls</h3>
+
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+        <a class="card" href="/ui/dashboard" style="text-decoration:none; color:black;">
+            <h3>📊 Analytics Dashboard</h3>
+            <p>Charts + Peak Hours + Workload</p>
+        </a>
+
+        <a class="card" href="/ui/doctors" style="text-decoration:none; color:black;">
+            <h3>👨‍⚕️ Doctors</h3>
+            <p>Add / Update doctor status</p>
+        </a>
+
+        <a class="card" href="/ui/patients" style="text-decoration:none; color:black;">
+            <h3>🧑 Patients</h3>
+            <p>Register patients</p>
+        </a>
+
+        <a class="card" href="/ui/appointments" style="text-decoration:none; color:black;">
+            <h3>📅 Appointments</h3>
+            <p>Cancel / Reschedule</p>
+        </a>
+
+        <a class="card" href="/ui/slots" style="text-decoration:none; color:black;">
+            <h3>🕒 Generate Slots</h3>
+            <p>Create daily time slots</p>
+        </a>
+
+        <a class="card" href="/ui/book" style="text-decoration:none; color:black;">
+            <h3>🤖 AI Booking</h3>
+            <p>Test AI Scheduler</p>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

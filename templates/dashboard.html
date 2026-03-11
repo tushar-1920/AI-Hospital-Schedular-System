@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>📊 Hospital Dashboard</h2>
+    <p>Live hospital analytics (Doctors, Slots, Appointments, Peak Hours)</p>
+</div>
+
+<div class="card">
+    <h3>✅ Summary</h3>
+
+    <div class="result" id="statsBox">
+        Loading stats...
+    </div>
+</div>
+
+<div class="card">
+    <h3>🏥 Department Wise Appointments</h3>
+    <div class="result" id="deptBox">
+        Loading department stats...
+    </div>
+</div>
+
+<script>
+async function loadDashboard(){
+    const res = await fetch("/hospital/dashboard-stats");
+    const data = await res.json();
+
+    document.getElementById("statsBox").innerHTML = `
+        <b>Total Doctors:</b> ${data.total_doctors} <br>
+        <b>Total Patients:</b> ${data.total_patients} <br>
+        <b>Total Slots:</b> ${data.total_slots} <br>
+        <b>Total Appointments:</b> ${data.total_appointments} <br><br>
+
+        <b>🔥 Peak Hour:</b> ${data.peak_hour ? data.peak_hour + ":00" : "No Data"} <br>
+        <b>📌 Peak Hour Appointments:</b> ${data.peak_hour_count} <br>
+    `;
+
+    // Department wise stats
+    if(data.department_counts.length === 0){
+        document.getElementById("deptBox").innerHTML = "No department data yet ❌";
+        return;
+    }
+
+    let html = "<ul>";
+    data.department_counts.forEach(item => {
+        html += `<li><b>${item.department}</b> : ${item.count} appointments</li>`;
+    });
+    html += "</ul>";
+
+    document.getElementById("deptBox").innerHTML = html;
+}
+
+loadDashboard();
+</script>
+
+{% endblock %}

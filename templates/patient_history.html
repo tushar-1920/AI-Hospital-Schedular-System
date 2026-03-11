@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>🧑 Patient Appointment History</h2>
+    <p>See all appointments of a patient by patient ID</p>
+</div>
+
+<div class="card">
+    <input id="pid" type="number" placeholder="Enter Patient ID">
+    <button onclick="loadHistory()">View History</button>
+
+    <div class="result" id="historyBox"></div>
+</div>
+
+<script>
+async function loadHistory(){
+    const patient_id = parseInt(document.getElementById("pid").value);
+
+    const res = await fetch(`/hospital/patient-history/${patient_id}`);
+    const data = await res.json();
+
+    if(data.length === 0){
+        document.getElementById("historyBox").innerHTML = "No history found ❌";
+        return;
+    }
+
+    let html = "<table border='1' cellpadding='8' style='width:100%; border-collapse:collapse;'>";
+    html += "<tr><th>Appt ID</th><th>Doctor</th><th>Dept</th><th>Slot</th><th>Status</th><th>Priority</th><th>Wait</th></tr>";
+
+    data.forEach(a => {
+        html += `
+            <tr>
+                <td>${a.appointment_id}</td>
+                <td>${a.doctor_name}</td>
+                <td>${a.department}</td>
+                <td>${a.slot_date} ${a.slot_time}</td>
+                <td><b>${a.status}</b></td>
+                <td>${a.priority}</td>
+                <td>${a.predicted_wait_time ?? "NA"} min</td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("historyBox").innerHTML = html;
+}
+</script>
+
+{% endblock %}

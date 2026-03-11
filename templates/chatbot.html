@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>🤖 Hospital Chatbot Booking</h2>
+    <p>Book appointments in chat: <b>book cardiology appointment</b></p>
+</div>
+
+<div class="card">
+    <label><b>Patient ID</b></label>
+    <input id="patient_id" type="number" placeholder="Enter your Patient ID">
+
+    <label style="margin-top:10px;"><b>Message</b></label>
+    <input id="msg" placeholder="Type your message...">
+
+    <button style="margin-top:10px;" onclick="sendMsg()">Send</button>
+
+    <div class="result" id="chatBox" style="margin-top:15px;"></div>
+</div>
+
+<script>
+async function sendMsg(){
+    const message = document.getElementById("msg").value.trim();
+    const patient_id = document.getElementById("patient_id").value;
+
+    if(!patient_id){
+        alert("Please enter Patient ID ❌");
+        return;
+    }
+
+    const res = await fetch("/chatbot/ask", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            message: message,
+            patient_id: parseInt(patient_id)
+        })
+    });
+
+    const data = await res.json();
+
+    let html = `
+        <div style="padding:10px; border-radius:8px; background:#f1f5f9;">
+            <b>You:</b> ${message}<br>
+            <b>Bot:</b> ${data.reply}
+        </div>
+    `;
+
+    // ✅ Show confirm button if needed
+    if(data.show_confirm_button){
+        html += `
+            <button style="margin-top:10px; background:#16a34a;" onclick="sendConfirm()">
+                ✅ Confirm Booking
+            </button>
+        `;
+    }
+
+    document.getElementById("chatBox").innerHTML = html;
+    document.getElementById("msg").value = "";
+}
+
+async function sendConfirm(){
+    document.getElementById("msg").value = "confirm";
+    sendMsg();
+}
+</script>
+
+{% endblock %}

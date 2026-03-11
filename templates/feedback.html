@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h2>⭐ Rate Your Doctor</h2>
+    <p>Appointment ID: <b>{{ appointment_id }}</b></p>
+</div>
+
+<div class="card">
+    <h3>✅ Give Rating (1 to 5)</h3>
+
+    <select id="rating" style="width:100%; padding:10px;">
+        <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
+        <option value="4">⭐⭐⭐⭐ Very Good (4)</option>
+        <option value="3">⭐⭐⭐ Good (3)</option>
+        <option value="2">⭐⭐ Needs Improvement (2)</option>
+        <option value="1">⭐ Poor (1)</option>
+    </select>
+
+    <h3 style="margin-top:15px;">📝 Feedback</h3>
+    <textarea id="feedback_text" rows="5" style="width:100%;"
+        placeholder="Write your experience (optional)..."></textarea>
+
+    <button style="background:#2563eb; margin-top:12px;" onclick="submitFeedback()">
+        ✅ Submit Feedback
+    </button>
+
+    <div class="result" id="feedResult"></div>
+</div>
+
+<script>
+async function submitFeedback(){
+
+    const rating = document.getElementById("rating").value;
+    const feedback_text = document.getElementById("feedback_text").value;
+
+    const res = await fetch("/hospital/submit-feedback", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            appointment_id: {{ appointment_id }},
+            rating: rating,
+            feedback_text: feedback_text
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("feedResult").innerHTML =
+        "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+
+    if(!data.error){
+        setTimeout(() => {
+            window.location.href = "/ui/patient-dashboard";
+        }, 1200);
+    }
+}
+</script>
+
+{% endblock %}
